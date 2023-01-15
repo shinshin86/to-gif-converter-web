@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>to GIF converter web</title>
+</head>
+
+<body>
+  <div>
+    <h1>to GIF converter web</h1>
+    <p id="message">Select video file</p>
+    <input type="file" id="video" multiple />
+  </div>
+  <script src="node_modules/@ffmpeg/ffmpeg/dist/ffmpeg.min.js"></script>
+  <script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    let ffmpeg = null;
+
+    const convertGif = async ({ target: { files } }) => {
+      if (ffmpeg === null) {
+        ffmpeg = createFFmpeg({ log: true });
+      }
+
+      for (const file of files) {
+        const { name } = file
+        const message = document.getElementById("message");
+        message.innerHTML = "Loading ffmpeg-core.js...";
+
+        if (!ffmpeg.isLoaded()) {
+          await ffmpeg.load();
+        }
+
+        ffmpeg.FS("writeFile", name, await fetchFile(file));
+        message.innerHTML = `Start convert GIF: ${name}`;
+
+        const outputFileName = `${name}.gif`;
+        await ffmpeg.run("-i", name, "-r", "30", outputFileName);
+        message.innerHTML = `Complete convert: ${outputFileName}`;
+
+        const data = ffmpeg.FS("readFile", outputFileName);
+        const downloadLink = document.createElement("a");
+        const downloadUrl = URL.createObjectURL(new Blob([data.buffer], { type: "image/gif" }));
+        downloadLink.href = downloadUrl;
+        downloadLink.download = outputFileName;
+        downloadLink.click();
+      }
+    }
+
+    document.getElementById("video").addEventListener("change", convertGif)
+  </script>
+</body>
+
+</html>
